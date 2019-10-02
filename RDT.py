@@ -37,8 +37,8 @@ class Packet:
         #convert sequence number of a byte field of seq_num_S_length bytes
         seq_num_S = str(self.seq_num).zfill(self.seq_num_S_length)
         #ack and nak flags
-        ack_S = = str(self.ack).zfill(self.ack_nak_length)
-        nak_S = = str(self.nak).zfill(self.ack_nak_length)
+        ack_S = str(self.ack).zfill(self.ack_nak_length)
+        nak_S = str(self.nak).zfill(self.ack_nak_length)
         #convert length to a byte field of length_S_length bytes
         length_S = str(self.length_S_length + len(seq_num_S) + self.checksum_length + len(ack_S) + len(nak_S) +
                                    len(self.msg_S)).zfill(self.length_S_length)
@@ -55,10 +55,10 @@ class Packet:
         length_S = byte_S[0:Packet.length_S_length]
         seq_num_S = byte_S[Packet.length_S_length : Packet.seq_num_S_length+Packet.seq_num_S_length]
         #ack and nak
-        ack_S = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :
-                         Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length])
-        nak_S = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
-                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)])
+        ack_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :
+                         Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length]
+        nak_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
+                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)]
         checksum_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length : Packet.seq_num_S_length+Packet.length_S_length+Packet.checksum_length]
         msg_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length) :]
         
@@ -107,11 +107,29 @@ class RDT:
             #if this was the last packet, will return on the next iteration
             
     
-    def rdt_2_1_send(self, msg_S):
-        pass
+    def rdt_2_1_send(self, msg_S, ack=0, nak=0):
+        p = Packet(self.seq_num, msg_S, ack, nak)
+        self.seq_num += 1
+        self.network.udt_send(p.get_byte_S())
         
     def rdt_2_1_receive(self):
-        pass
+        ret_S = None
+        byte_S = self.network.udt_receive()
+        self.byte_buffer += byte_S
+        while True:
+            #check if we have received enough bytes
+            if(len(self.byte_buffer) < Packet.length_S_length):
+                return ret_S #not enough bytes to read packet length
+            #extract length of packet
+            length = int(self.byte_buffer[:Packet.length_S_length])
+            if len(self.byte_buffer) < length:
+                return ret_S #not enough bytes to read the whole packet
+            #create packet from buffer content and add to return string
+            p = Packet.from_byte_S(self.byte_buffer[0:length])
+            print("ACK = ", p.ack, "NAK = ", p.nak)
+            ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            #remove the packet bytes from the buffer
+            self.byte_buffer = self.byte_buffer[length:]
     
     def rdt_3_0_send(self, msg_S):
         pass
