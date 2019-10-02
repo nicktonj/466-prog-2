@@ -28,7 +28,7 @@ class Packet:
         ack = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :
                          Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length])
         nak = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
-                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length+Packet.ack_nak_length])
+                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)])
         msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length) :]
         return self(seq_num, msg_S, ack, nak)
         
@@ -58,7 +58,7 @@ class Packet:
         ack_S = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length :
                          Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length])
         nak_S = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
-                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length+Packet.ack_nak_length])
+                    Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)])
         checksum_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length : Packet.seq_num_S_length+Packet.length_S_length+Packet.checksum_length]
         msg_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length+Packet.checksum_length :]
         
