@@ -60,10 +60,10 @@ class Packet:
         nak_S = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
                     Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)])
         checksum_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length : Packet.seq_num_S_length+Packet.length_S_length+Packet.checksum_length]
-        msg_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length+Packet.checksum_length :]
+        msg_S = byte_S[Packet.seq_num_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length) :]
         
         #compute the checksum locally
-        checksum = hashlib.md5(str(length_S+seq_num_S+msg_S).encode('utf-8'))
+        checksum = hashlib.md5(str(length_S+seq_num_S+ack_S+nak_S+msg_S).encode('utf-8'))
         computed_checksum_S = checksum.hexdigest()
         #and check if the same
         return checksum_S != computed_checksum_S
