@@ -21,7 +21,10 @@ class Packet:
     @classmethod
     def from_byte_S(self, byte_S):
         if Packet.corrupt(byte_S):
-            raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
+            # raise RuntimeError('Cannot initialize Packet: byte_S is corrupt')
+            seq_num = int(byte_S[Packet.length_S_length : Packet.length_S_length+Packet.seq_num_S_length])
+            msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length) :]
+            return self(seq_num, msg_S, 0, 1)
         #extract the fields
         seq_num = int(byte_S[Packet.length_S_length : Packet.length_S_length+Packet.seq_num_S_length])
         #ack and nak
@@ -29,6 +32,10 @@ class Packet:
                          Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length])
         nak = int(byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+Packet.ack_nak_length :
                     Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length)])
+        if self.seq_num != seq_num:
+            nak = 1
+        if ack == 0 and nak == 0:
+            ack = 1
         msg_S = byte_S[Packet.length_S_length+Packet.seq_num_S_length+Packet.checksum_length+(2*Packet.ack_nak_length) :]
         return self(seq_num, msg_S, ack, nak)
         
@@ -71,9 +78,11 @@ class Packet:
 
 class RDT:
     ## latest sequence number used in a packet
-    seq_num = 1
+    seq_num = 0
     ## buffer of bytes read from network
-    byte_buffer = '' 
+    byte_buffer = ''
+    ## temp msg buffer
+    msg_buffer = ''
 
     def __init__(self, role_S, server_S, port):
         self.network = Network.NetworkLayer(role_S, server_S, port)
@@ -109,11 +118,14 @@ class RDT:
     
     def rdt_2_1_send(self, msg_S, ack=0, nak=0):
         p = Packet(self.seq_num, msg_S, ack, nak)
-        self.seq_num += 1
+        msg_buffer = p.msg_S
+        print('Send SEQ:', self.seq_num)
+        self.seq_num = 1 if (self.seq_num == 0) else 0
         self.network.udt_send(p.get_byte_S())
         
     def rdt_2_1_receive(self):
         ret_S = None
+        msg_retransmit = None
         byte_S = self.network.udt_receive()
         self.byte_buffer += byte_S
         while True:
@@ -127,7 +139,15 @@ class RDT:
             #create packet from buffer content and add to return string
             p = Packet.from_byte_S(self.byte_buffer[0:length])
             print("ACK = ", p.ack, "NAK = ", p.nak)
-            ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            if p.nak == 1 or (p.ack == 1 and p.seq_num != self.seq_num):
+                self.rdt_2_1_send(self.msg_buffer)
+                while msg_retransmit is None:
+                    msg_retransmit = self.rdt_2_1_receive()
+                    print('Msg to be retransmitted:', msg_retransmit)
+            if msg_retransmit is None:
+                ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
+            else:
+                ret_S = msg_retransmit if (ret_S is None) else ret_S + msg_retransmit
             #remove the packet bytes from the buffer
             self.byte_buffer = self.byte_buffer[length:]
     
