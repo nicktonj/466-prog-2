@@ -12,7 +12,7 @@ class Packet:
     ## length of md5 checksum in hex
     checksum_length = 32 
         
-    def __init__(self, seq_num, msg_S, ack=0):
+    def __init__(self, seq_num, msg_S, ack=1):
         self.seq_num = seq_num
         self.msg_S = msg_S
         self.ack = ack
@@ -62,7 +62,7 @@ class Packet:
 
 class RDT:
     ## latest sequence number used in a packet
-    seq_num = 1
+    seq_num = 0
     ## buffer of bytes read from network
     byte_buffer = '' 
 
@@ -100,8 +100,26 @@ class RDT:
     
     def rdt_2_1_send(self, msg_S):
         p = Packet(self.seq_num, msg_S)
-        self.seq_num += 1
+        self.seq_num = 1 if self.seq_num == 0 else 0
         self.network.udt_send(p.get_byte_S())
+        while True:
+            byte_S = self.network.udt_receive()
+            if byte_S is None or byte_S == '':
+                continue
+            self.byte_buffer += byte_S
+            while True:
+                if len(self.byte_buffer) < Packet.length_S_length:
+                    print("returning 1")
+                    break
+                length = int(self.byte_buffer[:Packet.length_S_length])
+                if len(self.byte_buffer) < length:
+                    print("returning 2")
+                    break
+                p_ack = Packet.from_byte_S(self.byte_buffer[0:length])
+                print("ACK:", p_ack.ack)
+                self.byte_buffer = ''
+            # print("SEQ:", p_ack.seq_num, "MSG:", p_ack.msg_S, "ACK:", p_ack.ack)
+            break
         
     def rdt_2_1_receive(self):
         ret_S = None
@@ -115,7 +133,9 @@ class RDT:
                 return ret_S
             p = Packet.from_byte_S(self.byte_buffer[0:length])
             ret_S = p.msg_S if (ret_S is None) else ret_S + p.msg_S
-            self.byte_buffer = self.byte_buffer[length:]
+            if ret_S is not None:
+                self.network.udt_send(Packet(p.seq_num, 'ACK', 1).get_byte_S())
+            self.byte_buffer = ''
     
     def rdt_3_0_send(self, msg_S):
         pass
