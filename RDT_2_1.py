@@ -3,7 +3,7 @@ import argparse
 from time import sleep
 import hashlib
 
-
+# This is a Packet class
 class Packet:
     ## the number of bytes used to store packet length
     seq_num_S_length = 10
