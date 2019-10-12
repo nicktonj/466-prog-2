@@ -1,0 +1,6 @@
+Nicolas Tonjum and Zachary Taylor
+
+We worked for nearly 25 hours on this project, and we could not get RDT 2.1 or RDT 3.0 to work. We very well understand the concept of both protocols, but we struggled to implement them in the code. No matter how many different strategies we implemented, the program always fell into an infinite loop on the receiving side. We sought help from the professor, fellow students, the slides, the book, and the internet, but had no luck. We tried our best...
+
+YouTube link: https://youtu.be/pkirFTW05zU
+    - Both 2.1 and 3.0 work when no packet corruption or loss is set, so we still recorded a video.
