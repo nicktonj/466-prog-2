@@ -124,7 +124,6 @@ class RDT:
         byte_S = ''
         while True:
             self.network.udt_send(p.get_byte_S())
-            sleep(0.1)
             while byte_S == '':
                 byte_S = self.network.udt_receive()
             self.byte_buffer += byte_S
@@ -150,7 +149,6 @@ class RDT:
             p = Packet.from_byte_S(self.byte_buffer[0:length])
             self.byte_buffer = self.byte_buffer[length:]
             self.network.udt_send(Packet(p.seq_num, ack=p.ack).get_byte_S())
-            sleep(0.1)
             if p.ack == 1 and p.seq_num == self.seq_num:
                 ret_S = p.msg_S if ret_S is None else ret_S + p.msg_S
                 self.seq_num = 1 if self.seq_num == 0 else 0
